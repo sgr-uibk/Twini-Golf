@@ -4,6 +4,7 @@
 #include <SDL2/SDL_mixer.h>
 #include <iostream>
 #include <vector>
+#include <memory> // unique_ptr
 
 #include "RenderWindow.h"
 #include "Entity.h"
@@ -148,7 +149,7 @@ void loadLevel(int level)
 	}
 	balls[0].setVelocity(0, 0);
 	balls[1].setVelocity(0,0);
-    balls[0].setScale(1, 1);
+	balls[0].setScale(1, 1);
 	balls[1].setScale(1, 1);
 	balls[0].setWin(false);
 	balls[1].setWin(false);
@@ -195,7 +196,7 @@ void loadLevel(int level)
 	}
 }
 
-const char* getStrokeText()
+std::unique_ptr<char[]> getStrokeText()
 {
 	int biggestStroke = 0;
 	if (balls[1].getStrokes() > balls[0].getStrokes())
@@ -206,21 +207,23 @@ const char* getStrokeText()
 	{
 		biggestStroke = balls[0].getStrokes();
 	}
-	std::string s = std::to_string(biggestStroke);
-	s = "STROKES: " + s;
-	return s.c_str();
+	const int bufferSize = 32; // 32 chars should be enough
+	auto result = std::make_unique<char[]>(bufferSize);
+	snprintf(result.get(), bufferSize, "STROKES: %d", biggestStroke);
+	return result;
 }
 
-const char* getLevelText(int side)
+std::unique_ptr<char[]> getLevelText(int side)
 {
 	int tempLevel = (level + 1)*2 - 1;
 	if (side == 1)
 	{
 		tempLevel++;
 	}
-	std::string s = std::to_string(tempLevel);
-	s = "HOLE: " + s;
-	return s.c_str();
+	const int bufferSize = 32; // 32 chars should be enough
+	auto result = std::make_unique<char[]>(bufferSize);
+	snprintf(result.get(), bufferSize, "POINTS: %d", tempLevel);
+	return result;
 }
 
 void update()
@@ -262,8 +265,8 @@ void update()
 			b.update(deltaTime, mouseDown, mousePressed, tiles, holes, chargeSfx, swingSfx, holeSfx);
 		}
 		if (balls[0].getScale().x < -1 && balls[1].getScale().x < -1)
- 		{
-        	level++;
+		{
+		level++;
 			loadLevel(level);
     	}
 	}
@@ -305,24 +308,24 @@ void graphics()
 	if (state != 2)
 	{
 		window.render(640/4 - 132/2, 480 - 32, levelTextBgTexture);
-		window.renderCenter(-160, 240 - 16 + 3, getLevelText(0), font24, black);
-		window.renderCenter(-160, 240 - 16, getLevelText(0), font24, white);
+		window.renderCenter(-160, 240 - 16 + 3, getLevelText(0).get(), font24, black);
+		window.renderCenter(-160, 240 - 16, getLevelText(0).get(), font24, white);
 
 		window.render(640/2 + 640/4 - 132/2, 480 - 32, levelTextBgTexture);
-		window.renderCenter(160, 240 - 16 + 3, getLevelText(1), font24, black);
-		window.renderCenter(160, 240 - 16, getLevelText(1), font24, white);
+		window.renderCenter(160, 240 - 16 + 3, getLevelText(1).get(), font24, black);
+		window.renderCenter(160, 240 - 16, getLevelText(1).get(), font24, white);
 
 		window.render(640/2 - 196/2, 0, uiBgTexture);
-		window.renderCenter(0, -240 + 16 + 3, getStrokeText(), font24, black);
-		window.renderCenter(0, -240 + 16, getStrokeText(), font24, white);
+		window.renderCenter(0, -240 + 16 + 3, getStrokeText().get(), font24, black);
+		window.renderCenter(0, -240 + 16, getStrokeText().get(), font24, white);
 	}
 	else
 	{
 		window.render(0, 0, endscreenOverlayTexture);
 		window.renderCenter(0, 3 - 32, "YOU COMPLETED THE COURSE!", font48, black);
 		window.renderCenter(0, -32, "YOU COMPLETED THE COURSE!", font48, white);
-		window.renderCenter(0, 3 + 32, getStrokeText(), font32, black);
-		window.renderCenter(0, 32, getStrokeText(), font32, white);
+		window.renderCenter(0, 3 + 32, getStrokeText().get(), font32, black);
+		window.renderCenter(0, 32, getStrokeText().get(), font32, white);
 	}
 	window.display();
 }
